@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  carts  Cart[]
+  orders Order[]
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id                 Int     @id @default(autoincrement())
+  title              String
+  description        String
+  price              Float
+  discountPercentage Float?
+  rating             Float?
+  stock              Int
+  brand              String?
+  sku                String  @unique
+  weight             Float?
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  dimensions Dimension?
+  reviews    Review[]
+  images     ProductImage[]
+  tags       ProductTag[]
+  carts      Cart[]
+  orderitems OrderItem[]
+
+  createdAt DateTime @default(now())
+}
+
+model Dimension {
+  id     Int   @id @default(autoincrement())
+  width  Float
+  height Float
+  depth  Float
+
+  productId Int     @unique
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model ProductImage {
+  id  Int    @id @default(autoincrement())
+  url String
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Review {
+  id            Int      @id @default(autoincrement())
+  rating        Int
+  comment       String
+  reviewerName  String
+  reviewerEmail String
+  createdAt     DateTime
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Tag {
+  id       Int          @id @default(autoincrement())
+  name     String       @unique
+  products ProductTag[]
+}
+
+model ProductTag {
+  id Int @id @default(autoincrement())
+
+  productId Int
+  tagId     Int
+
+  product Product @relation(fields: [productId], references: [id])
+  tag     Tag     @relation(fields: [tagId], references: [id])
+}
+
+model Cart {
+  id Int @id @default(autoincrement())
+
+  userId    Int
+  productId Int
+  quantity  Int
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  total     Float
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  user  User        @relation(fields: [userId], references: [id])
+  items OrderItem[]
+}
+
+model OrderItem {
+  id Int @id @default(autoincrement())
+
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Float
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
