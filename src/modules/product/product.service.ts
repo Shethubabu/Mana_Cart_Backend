@@ -1,22 +1,17 @@
-import { prisma } from "../../config/prisma"
+import * as repo from "./product.repository"
 
-export const getProducts = async () => {
-  return prisma.product.findMany({
-    include: {
-      images: true,
-      reviews: true,
-      category: true
-    }
-  })
+export const getProducts = async (
+  search: string,
+  page: number,
+  limit: number
+) => {
+
+  return repo.findProducts(search, page, limit)
+
 }
 
 export const getProductById = async (id: number) => {
-  return prisma.product.findUnique({
-    where: { id },
-    include: {
-      images: true,
-      reviews: true,
-      category: true
-    }
-  })
+
+  return repo.findProductById(id)
+
 }
