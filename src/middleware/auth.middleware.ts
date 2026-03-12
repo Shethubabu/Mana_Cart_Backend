@@ -1,20 +1,35 @@
 import { Request, Response, NextFunction } from "express"
-import jwt from "jsonwebtoken"
+import { verifyAccessToken } from "../utils/jwt"
 
 export const authenticate = (
-  req:Request,
-  res:Response,
-  next:NextFunction
+  req: any,
+  res: Response,
+  next: NextFunction
 ) => {
 
-  const token = req.headers.authorization?.split(" ")[1]
+  const header = req.headers.authorization
 
-  if(!token) return res.status(401).json({message:"Unauthorized"})
+  if (!header) {
+    return res.status(401).json({
+      message: "Unauthorized"
+    })
+  }
 
-  const decoded = jwt.verify(token,process.env.JWT_SECRET!)
+  const token = header.split(" ")[1]
 
-  req.user = decoded
+  try {
 
-  next()
+    const decoded = verifyAccessToken(token)
 
+    req.user = decoded
+
+    next()
+
+  } catch {
+
+    return res.status(401).json({
+      message: "Invalid token"
+    })
+
+  }
 }

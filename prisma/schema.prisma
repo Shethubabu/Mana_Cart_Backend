@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+ provider = "prisma-client-js"
 }
 
 datasource db {
@@ -25,28 +24,30 @@ model Category {
 }
 
 model Product {
-  id                 Int     @id @default(autoincrement())
-  title              String
-  description        String
-  price              Float
-  discountPercentage Float?
-  rating             Float?
-  stock              Int
-  brand              String?
-  sku                String  @unique
-  weight             Float?
+  id                  Int      @id @default(autoincrement())
+  title               String
+  description         String
+  price               Float
+  discountPercentage  Float?
+  rating              Float?
+  stock               Int
+  brand               String?
+  sku                 String   @unique
+  weight              Float?
 
-  categoryId Int
-  category   Category @relation(fields: [categoryId], references: [id])
+  featured            Boolean  @default(false)   // ⭐ add this
 
-  dimensions Dimension?
-  reviews    Review[]
-  images     ProductImage[]
-  tags       ProductTag[]
-  carts      Cart[]
-  orderitems OrderItem[]
+  categoryId          Int
+  category            Category @relation(fields: [categoryId], references: [id])
 
-  createdAt DateTime @default(now())
+  dimensions          Dimension?
+  reviews             Review[]
+  images              ProductImage[]
+  tags                ProductTag[]
+  carts               Cart[]
+  orderitems          OrderItem[]
+
+  createdAt           DateTime @default(now())
 }
 
 model Dimension {
