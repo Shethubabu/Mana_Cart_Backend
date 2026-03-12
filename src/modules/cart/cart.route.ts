@@ -12,4 +12,6 @@ router.patch("/update", authenticate, controller.updateCart)
 
 router.delete("/remove/:id", authenticate, controller.removeItem)
 
+router.delete("/clear", authenticate, controller.clearCart)
+
 export default router

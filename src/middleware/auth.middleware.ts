@@ -9,10 +9,11 @@ export const authenticate = (
 
   const header = req.headers.authorization
 
-  if (!header)
+  if (!header) {
     return res.status(401).json({
       message: "Unauthorized"
     })
+  }
 
   const token = header.split(" ")[1]
 
@@ -27,7 +28,7 @@ export const authenticate = (
   } catch {
 
     return res.status(401).json({
-      message: "Invalid or expired token"
+      message: "Invalid token"
     })
 
   }

@@ -7,7 +7,8 @@ export const getCart = async (userId: number) => {
     include: {
       product: {
         include: {
-          images: true
+          images: true,
+          category: true
         }
       }
     }
@@ -20,6 +21,24 @@ export const addToCart = async (
   productId: number,
   quantity: number
 ) => {
+
+  const existing = await prisma.cart.findFirst({
+    where: {
+      userId,
+      productId
+    }
+  })
+
+  if (existing) {
+
+    return prisma.cart.update({
+      where: { id: existing.id },
+      data: {
+        quantity: existing.quantity + quantity
+      }
+    })
+
+  }
 
   return prisma.cart.create({
     data: {
@@ -43,10 +62,18 @@ export const updateCart = async (
 
 }
 
-export const removeItem = async (cartId: number) => {
+export const removeCartItem = async (cartId: number) => {
 
   return prisma.cart.delete({
     where: { id: cartId }
+  })
+
+}
+
+export const clearCart = async (userId: number) => {
+
+  return prisma.cart.deleteMany({
+    where: { userId }
   })
 
 }

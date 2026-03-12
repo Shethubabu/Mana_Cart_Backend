@@ -6,6 +6,7 @@ export const checkout = async (req: any, res: Response) => {
   const order = await service.checkout(req.user.userId)
 
   res.json(order)
+
 }
 
 export const getOrders = async (req: any, res: Response) => {
@@ -13,4 +14,18 @@ export const getOrders = async (req: any, res: Response) => {
   const orders = await service.getOrders(req.user.userId)
 
   res.json(orders)
+
+}
+
+export const getOrderById = async (req: any, res: Response) => {
+
+  const orderId = Number(req.params.id)
+
+  const order = await service.getOrderById(
+    orderId,
+    req.user.userId
+  )
+
+  res.json(order)
+
 }

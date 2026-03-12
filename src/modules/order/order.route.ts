@@ -8,4 +8,6 @@ router.post("/checkout", authenticate, controller.checkout)
 
 router.get("/", authenticate, controller.getOrders)
 
+router.get("/:id", authenticate, controller.getOrderById)
+
 export default router
