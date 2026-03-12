@@ -1,4 +1,5 @@
 import express from "express"
+import dotenv from "dotenv"
 import cors from "cors"
 import productRoutes from "./modules/product/product.route"
 import authRoutes from "./modules/auth/auth.route"
@@ -22,9 +23,10 @@ const limiter = rateLimit({
 const app = express()
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: [process.env.CLIENT_URL as string, process.env.DEPLOYED_URL as string],
   credentials: true
 }))
+
 app.use(express.json())
 app.use(cookieParser())
 app.use(morgan("dev"))
