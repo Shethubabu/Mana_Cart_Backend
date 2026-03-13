@@ -1,5 +1,5 @@
 generator client {
- provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -24,40 +24,28 @@ model Category {
 }
 
 model Product {
-  id                  Int      @id @default(autoincrement())
-  title               String
-  description         String
-  price               Float
-  discountPercentage  Float?
-  rating              Float?
-  stock               Int
-  brand               String?
-  sku                 String   @unique
-  weight              Float?
+  id                 Int     @id @default(autoincrement())
+  title              String
+  description        String
+  price              Float
+  discountPercentage Float?
+  rating             Float?
+  stock              Int
+  brand              String?
+  sku                String  @unique
+  weight             Float?
 
-  featured            Boolean  @default(false)   // ⭐ add this
+  featured Boolean @default(false)
 
-  categoryId          Int
-  category            Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
 
-  dimensions          Dimension?
-  reviews             Review[]
-  images              ProductImage[]
-  tags                ProductTag[]
-  carts               Cart[]
-  orderitems          OrderItem[]
+  images ProductImage[]
 
-  createdAt           DateTime @default(now())
-}
+  carts      Cart[]
+  orderitems OrderItem[]
 
-model Dimension {
-  id     Int   @id @default(autoincrement())
-  width  Float
-  height Float
-  depth  Float
-
-  productId Int     @unique
-  product   Product @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model ProductImage {
@@ -66,34 +54,6 @@ model ProductImage {
 
   productId Int
   product   Product @relation(fields: [productId], references: [id])
-}
-
-model Review {
-  id            Int      @id @default(autoincrement())
-  rating        Int
-  comment       String
-  reviewerName  String
-  reviewerEmail String
-  createdAt     DateTime
-
-  productId Int
-  product   Product @relation(fields: [productId], references: [id])
-}
-
-model Tag {
-  id       Int          @id @default(autoincrement())
-  name     String       @unique
-  products ProductTag[]
-}
-
-model ProductTag {
-  id Int @id @default(autoincrement())
-
-  productId Int
-  tagId     Int
-
-  product Product @relation(fields: [productId], references: [id])
-  tag     Tag     @relation(fields: [tagId], references: [id])
 }
 
 model Cart {
