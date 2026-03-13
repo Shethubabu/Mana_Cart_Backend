@@ -40,7 +40,7 @@ export const findProducts = async ({
     include: {
       images: true,
       category: true,
-      reviews: true
+     
     }
   })
 
@@ -61,7 +61,6 @@ export const findProductById = async (id: number) => {
     where: { id },
     include: {
       images: true,
-      reviews: true,
       category: true
     }
   })
