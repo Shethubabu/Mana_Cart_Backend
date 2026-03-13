@@ -1,4 +1,5 @@
 import { Request, Response } from "express"
+import { prisma } from "../../config/prisma"
 import * as service from "./auth.service"
 import {
   verifyRefreshToken,
@@ -11,11 +12,11 @@ export const register = async (req: Request, res: Response) => {
     await service.registerUser(req.body)
 
   res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: false,
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  })
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+  maxAge: 7 * 24 * 60 * 60 * 1000
+})
 
   res.json({ user, accessToken })
 }
@@ -29,10 +30,10 @@ export const login = async (req: Request, res: Response) => {
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    secure: false,
     maxAge: 7 * 24 * 60 * 60 * 1000
-  })
+    })
 
   res.json({ user, accessToken })
 }
@@ -67,6 +68,16 @@ export const me = async (req: any, res: Response) => {
 }
 
 export const logout = async (req: Request, res: Response) => {
+
+  const token = req.cookies.refreshToken
+
+  if (token) {
+
+    await prisma.refreshToken.deleteMany({
+      where: { token }
+    })
+
+  }
 
   res.clearCookie("refreshToken")
 

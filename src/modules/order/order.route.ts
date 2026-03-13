@@ -5,6 +5,7 @@ import { authenticate } from "../../middleware/auth.middleware"
 const router = Router()
 
 router.post("/checkout", authenticate, controller.checkout)
+router.post("/confirm-payment", authenticate, controller.confirmPayment)
 
 router.get("/", authenticate, controller.getOrders)
 

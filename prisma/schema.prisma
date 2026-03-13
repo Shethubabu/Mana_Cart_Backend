@@ -15,6 +15,37 @@ model User {
 
   carts  Cart[]
   orders Order[]
+  addresses Address[]
+  refreshTokens RefreshToken[]
+}
+
+model Address {
+  id        Int    @id @default(autoincrement())
+  userId    Int
+
+  name      String
+  phone     String
+  pincode   String
+  locality  String
+  city      String
+  state     String
+  addressLine String
+  landmark  String?
+  type      String
+
+  user User @relation(fields: [userId], references: [id])
+  orders Order[]
+
+  createdAt DateTime @default(now())
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Category {
@@ -70,11 +101,16 @@ model Cart {
 model Order {
   id        Int      @id @default(autoincrement())
   userId    Int
+  addressId Int?
   total     Float
   status    String   @default("pending")
+  paymentStatus String @default("pending")
+  paymentIntentId String? @unique
+  currency String @default("inr")
   createdAt DateTime @default(now())
 
   user  User        @relation(fields: [userId], references: [id])
+  address Address?  @relation(fields: [addressId], references: [id])
   items OrderItem[]
 }
 

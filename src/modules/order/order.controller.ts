@@ -3,7 +3,20 @@ import * as service from "./order.service"
 
 export const checkout = async (req: any, res: Response) => {
 
-  const order = await service.checkout(req.user.userId)
+  const order = await service.checkout(req.user.userId, {
+    addressId: req.body.addressId
+  })
+
+  res.json(order)
+
+}
+
+export const confirmPayment = async (req: any, res: Response) => {
+
+  const order = await service.confirmPayment(
+    req.user.userId,
+    req.body.paymentIntentId
+  )
 
   res.json(order)
 
