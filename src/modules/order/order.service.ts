@@ -1,11 +1,26 @@
 import { prisma } from "../../config/prisma"
-import { getStripe } from "../../config/stripe"
+import {
+  createRazorpayOrder,
+  getRazorpayKeyId,
+  getRazorpayPayment,
+  verifyRazorpaySignature
+} from "../../config/razorpay"
 import { AppError } from "../../utils/app-error"
 
-const STRIPE_CURRENCY = (process.env.STRIPE_CURRENCY || "inr").toLowerCase()
+const RAZORPAY_CURRENCY = (
+  process.env.RAZORPAY_CURRENCY ||
+  process.env.STRIPE_CURRENCY ||
+  "INR"
+).toUpperCase()
 
 type CheckoutInput = {
   addressId?: number
+}
+
+type ConfirmPaymentInput = {
+  razorpayOrderId?: string
+  razorpayPaymentId?: string
+  razorpaySignature?: string
 }
 
 const getCheckoutContext = async (
@@ -85,17 +100,15 @@ export const checkout = async (
 ) => {
   const { user, cartItems, total, amount, address } =
     await getCheckoutContext(userId, input.addressId)
-  const stripe = getStripe()
+  const receipt = `mc_${userId}_${Date.now()}`.slice(0, 40)
 
-  const paymentIntent = await stripe.paymentIntents.create({
+  const razorpayOrder = await createRazorpayOrder({
     amount,
-    currency: STRIPE_CURRENCY,
-    automatic_payment_methods: {
-      enabled: true
-    },
-    receipt_email: user.email,
-    metadata: {
-      userId: String(userId)
+    currency: RAZORPAY_CURRENCY,
+    receipt,
+    notes: {
+      userId: String(userId),
+      email: user.email
     }
   })
 
@@ -104,8 +117,9 @@ export const checkout = async (
       userId,
       addressId: address?.id,
       total,
-      currency: STRIPE_CURRENCY,
-      paymentIntentId: paymentIntent.id,
+      currency: RAZORPAY_CURRENCY,
+      paymentProvider: "razorpay",
+      paymentProviderOrderId: razorpayOrder.id,
       status: "pending",
       paymentStatus: "pending",
       items: {
@@ -132,25 +146,33 @@ export const checkout = async (
 
   return {
     order,
-    paymentIntentId: paymentIntent.id,
-    clientSecret: paymentIntent.client_secret,
+    razorpayKeyId: getRazorpayKeyId(),
+    razorpayOrderId: razorpayOrder.id,
     amount,
-    currency: STRIPE_CURRENCY
+    currency: RAZORPAY_CURRENCY
   }
 }
 
 export const confirmPayment = async (
   userId: number,
-  paymentIntentId: string
+  input: ConfirmPaymentInput
 ) => {
-  if (!paymentIntentId) {
-    throw new AppError("paymentIntentId is required", 400)
+  const razorpayOrderId = input.razorpayOrderId?.trim()
+  const razorpayPaymentId = input.razorpayPaymentId?.trim()
+  const razorpaySignature = input.razorpaySignature?.trim()
+
+  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    throw new AppError(
+      "razorpayOrderId, razorpayPaymentId and razorpaySignature are required",
+      400
+    )
   }
 
   const order = await prisma.order.findFirst({
     where: {
       userId,
-      paymentIntentId
+      paymentProvider: "razorpay",
+      paymentProviderOrderId: razorpayOrderId
     },
     include: {
       address: true,
@@ -171,15 +193,44 @@ export const confirmPayment = async (
   }
 
   if (order.paymentStatus === "paid") {
+    if (
+      order.paymentProviderPaymentId &&
+      order.paymentProviderPaymentId !== razorpayPaymentId
+    ) {
+      throw new AppError("Payment ID does not match the paid order", 400)
+    }
+
     return order
   }
 
-  const stripe = getStripe()
-  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+  const isValidSignature = verifyRazorpaySignature({
+    orderId: razorpayOrderId,
+    paymentId: razorpayPaymentId,
+    signature: razorpaySignature
+  })
 
-  if (paymentIntent.status !== "succeeded") {
+  if (!isValidSignature) {
+    throw new AppError("Invalid Razorpay payment signature", 400)
+  }
+
+  const payment = await getRazorpayPayment(razorpayPaymentId)
+  const expectedAmount = Math.round(order.total * 100)
+
+  if (payment.order_id !== razorpayOrderId) {
+    throw new AppError("Payment does not belong to this Razorpay order", 400)
+  }
+
+  if (payment.amount !== expectedAmount) {
+    throw new AppError("Payment amount mismatch", 400)
+  }
+
+  if (payment.currency.toUpperCase() !== order.currency.toUpperCase()) {
+    throw new AppError("Payment currency mismatch", 400)
+  }
+
+  if (!["authorized", "captured"].includes(payment.status)) {
     throw new AppError(
-      `Payment is not complete. Current status: ${paymentIntent.status}`,
+      `Payment is not complete. Current status: ${payment.status}`,
       400
     )
   }
@@ -189,7 +240,8 @@ export const confirmPayment = async (
       where: { id: order.id },
       data: {
         status: "paid",
-        paymentStatus: "paid"
+        paymentStatus: "paid",
+        paymentProviderPaymentId: razorpayPaymentId
       },
       include: {
         address: true,

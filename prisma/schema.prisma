@@ -105,8 +105,10 @@ model Order {
   total     Float
   status    String   @default("pending")
   paymentStatus String @default("pending")
-  paymentIntentId String? @unique
-  currency String @default("inr")
+  paymentProvider String @default("razorpay")
+  paymentProviderOrderId String? @unique
+  paymentProviderPaymentId String? @unique
+  currency String @default("INR")
   createdAt DateTime @default(now())
 
   user  User        @relation(fields: [userId], references: [id])
