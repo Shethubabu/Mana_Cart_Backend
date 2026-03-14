@@ -11,6 +11,7 @@ import cookieParser from "cookie-parser"
 import homeRoutes from "./modules/home/home.route"
 import morgan from "morgan"
 import rateLimit from "express-rate-limit"
+import addressRoutes from "./modules/address/address.routes"
 
 
 
@@ -32,6 +33,9 @@ app.use(cookieParser())
 app.use(morgan("dev"))
 app.use(limiter)
 
+
+
+app.use("/api/addresses", addressRoutes)
 app.use("/api/products", productRoutes)
 app.use("/api/auth", authRoutes)
 app.use("/api/cart", cartRoutes)
