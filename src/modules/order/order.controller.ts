@@ -15,7 +15,11 @@ export const confirmPayment = async (req: any, res: Response) => {
 
   const order = await service.confirmPayment(
     req.user.userId,
-    req.body.paymentIntentId
+    {
+      razorpayOrderId: req.body.razorpayOrderId,
+      razorpayPaymentId: req.body.razorpayPaymentId,
+      razorpaySignature: req.body.razorpaySignature
+    }
   )
 
   res.json(order)
