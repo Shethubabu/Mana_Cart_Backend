@@ -7,15 +7,13 @@ export const authenticate = (
   next: NextFunction
 ) => {
 
-  const header = req.headers.authorization
+  const token = req.cookies.accessToken
 
-  if (!header) {
+  if (!token) {
     return res.status(401).json({
       message: "Unauthorized"
     })
   }
-
-  const token = header.split(" ")[1]
 
   try {
 
