@@ -17,11 +17,19 @@ import addressRoutes from "./modules/address/address.routes"
 
 
 
-const limiter = rateLimit({
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Too many requests, please try again in a few minutes."
+  }
 })
 const app = express()
+
+
+app.set("trust proxy", 1)
 
 app.use(cors({
   origin: [process.env.CLIENT_URL as string, process.env.DEPLOYED_URL as string],
@@ -31,7 +39,7 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 app.use(morgan("dev"))
-app.use(limiter)
+app.use(apiLimiter)
 
 
 
