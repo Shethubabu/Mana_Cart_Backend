@@ -32,6 +32,7 @@ export const registerUser = async (data: any) => {
 
   return { user, accessToken, refreshToken }
 }
+
 export const loginUser = async (email: string, password: string) => {
 
   const user = await prisma.user.findUnique({
@@ -57,6 +58,7 @@ export const loginUser = async (email: string, password: string) => {
 
   return { user, accessToken, refreshToken }
 }
+
 export const getUser = async (userId: number) => {
 
   return prisma.user.findUnique({
@@ -68,5 +70,4 @@ export const getUser = async (userId: number) => {
       createdAt: true
     }
   })
-
 }
