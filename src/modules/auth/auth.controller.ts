@@ -1,4 +1,4 @@
-import { Request, Response } from "express"
+import { CookieOptions, Request, Response } from "express"
 import { prisma } from "../../config/prisma"
 import * as service from "./auth.service"
 import {
@@ -6,24 +6,23 @@ import {
   generateAccessToken
 } from "../../utils/jwt"
 
+const isProduction = process.env.NODE_ENV === "production"
+
+const buildCookieOptions = (maxAge: number): CookieOptions => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  maxAge
+})
+
 export const register = async (req: Request, res: Response) => {
 
   const { user, accessToken, refreshToken } =
     await service.registerUser(req.body)
 
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 15 * 60 * 1000
-  })
+  res.cookie("accessToken", accessToken, buildCookieOptions(15 * 60 * 1000))
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  })
+  res.cookie("refreshToken", refreshToken, buildCookieOptions(7 * 24 * 60 * 60 * 1000))
 
   res.status(201).json({ user })
 }
@@ -35,19 +34,9 @@ export const login = async (req: Request, res: Response) => {
   const { user, accessToken, refreshToken } =
     await service.loginUser(email, password)
 
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 15 * 60 * 1000
-  })
+  res.cookie("accessToken", accessToken, buildCookieOptions(15 * 60 * 1000))
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  })
+  res.cookie("refreshToken", refreshToken, buildCookieOptions(7 * 24 * 60 * 60 * 1000))
 
   res.json({ user })
 }
@@ -65,12 +54,7 @@ export const refresh = async (req: Request, res: Response) => {
 
     const accessToken = generateAccessToken(decoded.userId)
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 15 * 60 * 1000
-    })
+    res.cookie("accessToken", accessToken, buildCookieOptions(15 * 60 * 1000))
 
     res.json({ success: true })
 
@@ -98,8 +82,8 @@ export const logout = async (req: Request, res: Response) => {
     })
   }
 
-  res.clearCookie("accessToken")
-  res.clearCookie("refreshToken")
+  res.clearCookie("accessToken", buildCookieOptions(0))
+  res.clearCookie("refreshToken", buildCookieOptions(0))
 
   res.json({ message: "Logged out successfully" })
 }
