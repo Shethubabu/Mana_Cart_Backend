@@ -15,6 +15,7 @@ const RAZORPAY_CURRENCY = (
 
 type CheckoutInput = {
   addressId?: number
+  paymentMethod?: string
 }
 
 type ConfirmPaymentInput = {
@@ -94,36 +95,35 @@ const getCheckoutContext = async (
   }
 }
 
-export const checkout = async (
-  userId: number,
-  input: CheckoutInput
-) => {
-  const { user, cartItems, total, amount, address } =
-    await getCheckoutContext(userId, input.addressId)
-  const receipt = `mc_${userId}_${Date.now()}`.slice(0, 40)
-
-  const razorpayOrder = await createRazorpayOrder({
-    amount,
-    currency: RAZORPAY_CURRENCY,
-    receipt,
-    notes: {
-      userId: String(userId),
-      email: user.email
+const createLocalOrder = async (input: {
+  userId: number
+  addressId?: number
+  total: number
+  currency: string
+  paymentProvider: string
+  paymentProviderOrderId?: string
+  paymentStatus?: string
+  status?: string
+  cartItems: Array<{
+    productId: number
+    quantity: number
+    product: {
+      price: number
     }
-  })
-
+  }>
+}) => {
   const order = await prisma.order.create({
     data: {
-      userId,
-      addressId: address?.id,
-      total,
-      currency: RAZORPAY_CURRENCY,
-      paymentProvider: "razorpay",
-      paymentProviderOrderId: razorpayOrder.id,
-      status: "pending",
-      paymentStatus: "pending",
+      userId: input.userId,
+      addressId: input.addressId,
+      total: input.total,
+      currency: input.currency,
+      paymentProvider: input.paymentProvider,
+      paymentProviderOrderId: input.paymentProviderOrderId,
+      status: input.status || "pending",
+      paymentStatus: input.paymentStatus || "pending",
       items: {
-        create: cartItems.map((item) => ({
+        create: input.cartItems.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
           price: item.product.price
@@ -144,8 +144,95 @@ export const checkout = async (
     }
   })
 
+  return order
+}
+
+export const checkout = async (
+  userId: number,
+  input: CheckoutInput
+) => {
+  const { user, cartItems, total, amount, address } =
+    await getCheckoutContext(userId, input.addressId)
+  const paymentMethod = input.paymentMethod?.trim().toLowerCase()
+
+  if (paymentMethod === "cod" || paymentMethod === "cash_on_delivery") {
+    const order = await prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
+        data: {
+          userId,
+          addressId: address?.id,
+          total,
+          currency: RAZORPAY_CURRENCY,
+          paymentProvider: "cod",
+          status: "placed",
+          paymentStatus: "pending",
+          items: {
+            create: cartItems.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.product.price
+            }))
+          }
+        },
+        include: {
+          address: true,
+          items: {
+            include: {
+              product: {
+                include: {
+                  images: true
+                }
+              }
+            }
+          }
+        }
+      })
+
+      await tx.cart.deleteMany({
+        where: {
+          userId,
+          productId: {
+            in: cartItems.map((item) => item.productId)
+          }
+        }
+      })
+
+      return createdOrder
+    })
+
+    return {
+      order,
+      paymentMethod: "cod",
+      amount,
+      currency: RAZORPAY_CURRENCY
+    }
+  }
+
+  const receipt = `mc_${userId}_${Date.now()}`.slice(0, 40)
+
+  const razorpayOrder = await createRazorpayOrder({
+    amount,
+    currency: RAZORPAY_CURRENCY,
+    receipt,
+    notes: {
+      userId: String(userId),
+      email: user.email
+    }
+  })
+
+  const order = await createLocalOrder({
+    userId,
+    addressId: address?.id,
+    total,
+    currency: RAZORPAY_CURRENCY,
+    paymentProvider: "razorpay",
+    paymentProviderOrderId: razorpayOrder.id,
+    cartItems
+  })
+
   return {
     order,
+    paymentMethod: "razorpay",
     razorpayKeyId: getRazorpayKeyId(),
     razorpayOrderId: razorpayOrder.id,
     amount,

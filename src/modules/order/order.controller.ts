@@ -4,7 +4,8 @@ import * as service from "./order.service"
 export const checkout = async (req: any, res: Response) => {
 
   const order = await service.checkout(req.user.userId, {
-    addressId: req.body.addressId
+    addressId: req.body.addressId,
+    paymentMethod: req.body.paymentMethod
   })
 
   res.json(order)
