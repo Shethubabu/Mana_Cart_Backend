@@ -13,9 +13,7 @@ import morgan from "morgan"
 import rateLimit from "express-rate-limit"
 import addressRoutes from "./modules/address/address.routes"
 
-
-
-
+dotenv.config()
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -27,12 +25,16 @@ const apiLimiter = rateLimit({
   }
 })
 const app = express()
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.DEPLOYED_URL
+].filter((origin): origin is string => Boolean(origin))
 
 
 app.set("trust proxy", 1)
 
 app.use(cors({
-  origin: [process.env.CLIENT_URL as string, process.env.DEPLOYED_URL as string],
+  origin: allowedOrigins,
   credentials: true
 }))
 

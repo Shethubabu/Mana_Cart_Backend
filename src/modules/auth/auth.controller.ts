@@ -6,12 +6,14 @@ import {
   generateAccessToken
 } from "../../utils/jwt"
 
-const isProduction = process.env.NODE_ENV === "production"
+const isProduction =
+  process.env.NODE_ENV === "production" || process.env.RENDER === "true"
 
 const buildCookieOptions = (maxAge: number): CookieOptions => ({
   httpOnly: true,
   secure: isProduction,
   sameSite: isProduction ? "none" : "lax",
+  path: "/",
   maxAge
 })
 
