@@ -5,8 +5,8 @@ import { AppError } from "../utils/app-error"
 const RAZORPAY_API_BASE_URL = "https://api.razorpay.com/v1"
 
 const getRazorpayCredentials = () => {
-  const keyId = process.env.RAZORPAY_KEY_ID
-  const keySecret = process.env.RAZORPAY_KEY_SECRET
+  const keyId = process.env.RAZORPAY_KEY_ID?.trim()
+  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim()
 
   if (!keyId || !keySecret) {
     throw new AppError("Razorpay is not configured", 500)
@@ -56,6 +56,11 @@ export const createRazorpayOrder = async (input: {
       status: string
     }
   } catch (error: any) {
+    console.error("Razorpay order creation failed", {
+      status: error?.response?.status,
+      data: error?.response?.data
+    })
+
     const message =
       error?.response?.data?.error?.description ||
       error?.response?.data?.error?.reason ||
