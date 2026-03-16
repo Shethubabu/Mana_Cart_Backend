@@ -27,6 +27,7 @@ const getRazorpayClient = () => {
       username: keyId,
       password: keySecret
     },
+    proxy: false,
     timeout: 10000
   })
 }
@@ -57,6 +58,8 @@ export const createRazorpayOrder = async (input: {
     }
   } catch (error: any) {
     console.error("Razorpay order creation failed", {
+      message: error?.message,
+      code: error?.code,
       status: error?.response?.status,
       data: error?.response?.data
     })
@@ -64,6 +67,7 @@ export const createRazorpayOrder = async (input: {
     const message =
       error?.response?.data?.error?.description ||
       error?.response?.data?.error?.reason ||
+      error?.code ||
       "Failed to create Razorpay order"
 
     throw new AppError(message, error?.response?.status || 502)
@@ -83,9 +87,17 @@ export const getRazorpayPayment = async (paymentId: string) => {
       status: string
     }
   } catch (error: any) {
+    console.error("Razorpay payment fetch failed", {
+      message: error?.message,
+      code: error?.code,
+      status: error?.response?.status,
+      data: error?.response?.data
+    })
+
     const message =
       error?.response?.data?.error?.description ||
       error?.response?.data?.error?.reason ||
+      error?.code ||
       "Failed to verify Razorpay payment"
 
     throw new AppError(message, error?.response?.status || 502)
